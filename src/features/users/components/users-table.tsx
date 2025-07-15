@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useUsers } from '../context/users-context'
 import { User } from '../data/schema'
 import { DataTablePagination } from './data-table-pagination'
 import { DataTableToolbar } from './data-table-toolbar'
@@ -35,14 +36,15 @@ declare module '@tanstack/react-table' {
 
 interface DataTableProps {
   columns: ColumnDef<User>[]
-  data: User[]
+  // data: User[]
 }
 
-export function UsersTable({ columns, data }: DataTableProps) {
+export function UsersTable({ columns }: DataTableProps) {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [sorting, setSorting] = useState<SortingState>([])
+  const { data, fetchData } = useUsers()
 
   const table = useReactTable({
     data,

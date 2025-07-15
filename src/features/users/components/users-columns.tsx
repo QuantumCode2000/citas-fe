@@ -2,13 +2,13 @@ import { ColumnDef } from '@tanstack/react-table'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import LongText from '@/components/long-text'
-import { callTypes, userTypes } from '../data/data'
+// Asumo que tienes un tipo 'User' que coincide con tu nueva estructura de datos
 import { User } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
 export const columns: ColumnDef<User>[] = [
+  // Columna de selección (sin cambios)
   {
     id: 'select',
     header: ({ table }) => (
@@ -22,12 +22,6 @@ export const columns: ColumnDef<User>[] = [
         className='translate-y-[2px]'
       />
     ),
-    meta: {
-      className: cn(
-        'sticky md:table-cell left-0 z-10 rounded-tl',
-        'bg-background transition-colors duration-200 group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted'
-      ),
-    },
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
@@ -39,104 +33,81 @@ export const columns: ColumnDef<User>[] = [
     enableSorting: false,
     enableHiding: false,
   },
+
+  // CAMBIO: Adaptado de 'username' a 'usuario'
   {
-    accessorKey: 'username',
+    accessorKey: 'usuario',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Username' />
+      <DataTableColumnHeader column={column} title='Usuario' />
     ),
-    cell: ({ row }) => (
-      <LongText className='max-w-36'>{row.getValue('username')}</LongText>
-    ),
-    meta: {
-      className: cn(
-        'drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.1)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.1)] lg:drop-shadow-none',
-        'bg-background transition-colors duration-200 group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-        'sticky left-6 md:table-cell'
-      ),
-    },
-    enableHiding: false,
+    cell: ({ row }) => <div>{row.getValue('usuario')}</div>,
   },
+
+  // CAMBIO: Creada para combinar nombre, paterno y materno
   {
-    id: 'fullName',
+    id: 'nombreCompleto',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Name' />
+      <DataTableColumnHeader column={column} title='Nombre Completo' />
     ),
     cell: ({ row }) => {
-      const { firstName, lastName } = row.original
-      const fullName = `${firstName} ${lastName}`
-      return <LongText className='max-w-36'>{fullName}</LongText>
+      // Combina los campos, manejando el materno nulo
+      const fullName = `${row.original.nombre} ${row.original.paterno} ${
+        row.original.materno || ''
+      }`.trim()
+      return <div>{fullName}</div>
     },
-    meta: { className: 'w-36' },
   },
+
+  // Columna de Email (sin cambios en la lógica)
   {
     accessorKey: 'email',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Email' />
     ),
-    cell: ({ row }) => (
-      <div className='w-fit text-nowrap'>{row.getValue('email')}</div>
-    ),
+    cell: ({ row }) => <div>{row.getValue('email')}</div>,
   },
+
+  // CAMBIO: Creada para combinar código de país y whatsapp
   {
-    accessorKey: 'phoneNumber',
+    id: 'telefono',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Phone Number' />
-    ),
-    cell: ({ row }) => <div>{row.getValue('phoneNumber')}</div>,
-    enableSorting: false,
-  },
-  {
-    accessorKey: 'status',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Status' />
+      <DataTableColumnHeader column={column} title='Whatsapp' />
     ),
     cell: ({ row }) => {
-      const { status } = row.original
-      const badgeColor = callTypes.get(status)
+      const phone = `+${row.original.codigo_pais} ${row.original.whatsapp}`
+      return <div>{phone}</div>
+    },
+    enableSorting: false,
+  },
+
+  // CAMBIO: Adaptado de 'status' a 'estado'
+  {
+    accessorKey: 'estado',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Estado' />
+    ),
+    cell: ({ row }) => {
+      const estado = row.getValue('estado') as string
+      // Lógica simple para el color del badge. Puedes expandirla.
+      const badgeColor =
+        estado.toLowerCase() === 'activo'
+          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+
       return (
-        <div className='flex space-x-2'>
-          <Badge variant='outline' className={cn('capitalize', badgeColor)}>
-            {row.getValue('status')}
-          </Badge>
-        </div>
+        <Badge variant='outline' className={cn('capitalize', badgeColor)}>
+          {estado}
+        </Badge>
       )
     },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id))
     },
-    enableHiding: false,
-    enableSorting: false,
   },
-  {
-    accessorKey: 'role',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Role' />
-    ),
-    cell: ({ row }) => {
-      const { role } = row.original
-      const userType = userTypes.find(({ value }) => value === role)
 
-      if (!userType) {
-        return null
-      }
-
-      return (
-        <div className='flex items-center gap-x-2'>
-          {userType.icon && (
-            <userType.icon size={16} className='text-muted-foreground' />
-          )}
-          <span className='text-sm capitalize'>{row.getValue('role')}</span>
-        </div>
-      )
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
-    enableSorting: false,
-    enableHiding: false,
-  },
+  // Columna de Acciones (sin cambios)
   {
     id: 'actions',
-    cell: DataTableRowActions,
+    cell: ({ row }) => <DataTableRowActions row={row} />,
   },
 ]

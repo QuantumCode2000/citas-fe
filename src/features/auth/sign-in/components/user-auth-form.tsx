@@ -2,8 +2,10 @@ import { HTMLAttributes, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate } from '@tanstack/react-router'
 import { Link } from '@tanstack/react-router'
-import { IconBrandFacebook, IconBrandGithub } from '@tabler/icons-react'
+import { useAuthStore } from '@/stores/authStore'
+import apiService from '@/lib/apiService'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,17 +22,14 @@ import { PasswordInput } from '@/components/password-input'
 type UserAuthFormProps = HTMLAttributes<HTMLFormElement>
 
 const formSchema = z.object({
-  email: z
-    .string()
-    .min(1, { message: 'Please enter your email' })
-    .email({ message: 'Invalid email address' }),
+  usuario: z.string().min(1, { message: 'Por favor, ingresa tu usuario' }),
   password: z
     .string()
     .min(1, {
-      message: 'Please enter your password',
+      message: 'Por favor, ingresa tu contraseña',
     })
     .min(7, {
-      message: 'Password must be at least 7 characters long',
+      message: 'La contraseña debe tener al menos 7 caracteres',
     }),
 })
 
@@ -39,20 +38,32 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+
     defaultValues: {
-      email: '',
+      usuario: '',
       password: '',
     },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true)
-    // eslint-disable-next-line no-console
-    console.log(data)
+  const navigate = useNavigate()
 
-    setTimeout(() => {
+  async function onSubmit(data: z.infer<typeof formSchema>) {
+    setIsLoading(true)
+    try {
+      const result = await apiService.post<any>('/login', data)
+      if (result.ok && result.data && result.data.token) {
+        useAuthStore.getState().auth.setUser(result.data)
+        useAuthStore.getState().auth.setAccessToken(result.data.token)
+        localStorage.setItem('authToken', result.data.token)
+        navigate({ to: '/' })
+      } else {
+        alert(result.message || 'Error de autenticación')
+      }
+    } catch (error: any) {
+      alert(error?.message || 'Error de autenticación')
+    } finally {
       setIsLoading(false)
-    }, 3000)
+    }
   }
 
   return (
@@ -62,14 +73,15 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
         className={cn('grid gap-3', className)}
         {...props}
       >
+        {/* 3. Campo de formulario actualizado para 'usuario' */}
         <FormField
           control={form.control}
-          name='email'
+          name='usuario'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Usuario</FormLabel>
               <FormControl>
-                <Input placeholder='name@example.com' {...field} />
+                <Input placeholder='usuario' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -80,7 +92,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
           name='password'
           render={({ field }) => (
             <FormItem className='relative'>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Contraseña</FormLabel>
               <FormControl>
                 <PasswordInput placeholder='********' {...field} />
               </FormControl>
@@ -89,34 +101,14 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
                 to='/forgot-password'
                 className='text-muted-foreground absolute -top-0.5 right-0 text-sm font-medium hover:opacity-75'
               >
-                Forgot password?
+                ¿Olvidaste tu contraseña?
               </Link>
             </FormItem>
           )}
         />
         <Button className='mt-2' disabled={isLoading}>
-          Login
+          Iniciar Sesión
         </Button>
-
-        <div className='relative my-2'>
-          <div className='absolute inset-0 flex items-center'>
-            <span className='w-full border-t' />
-          </div>
-          <div className='relative flex justify-center text-xs uppercase'>
-            <span className='bg-background text-muted-foreground px-2'>
-              Or continue with
-            </span>
-          </div>
-        </div>
-
-        <div className='grid grid-cols-2 gap-2'>
-          <Button variant='outline' type='button' disabled={isLoading}>
-            <IconBrandGithub className='h-4 w-4' /> GitHub
-          </Button>
-          <Button variant='outline' type='button' disabled={isLoading}>
-            <IconBrandFacebook className='h-4 w-4' /> Facebook
-          </Button>
-        </div>
       </form>
     </Form>
   )

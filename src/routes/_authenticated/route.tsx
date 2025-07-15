@@ -4,7 +4,7 @@ import { AuthenticatedLayout } from '@/components/layout/authenticated-layout'
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ location }) => {
-    const isAuthenticated = !!useAuthStore.getState().auth.user
+    const isAuthenticated = !!useAuthStore.getState().auth.accessToken
 
     if (!isAuthenticated) {
       throw redirect({
